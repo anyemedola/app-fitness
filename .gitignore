@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build outputs
+dist/
+build/
+.turbo/
+coverage/
+
+# expo
+.expo/
+apps/mobile/.expo/
+apps/mobile/web-build/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# backend / prisma
+apps/backend/prisma/dev.db
+apps/backend/prisma/dev.db-journal
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# firebase
+**/google-services.json
+**/GoogleService-Info.plist
+firebase-service-account*.json
+
+# os / editor
+.DS_Store
+*.log
+.vscode/*
+!.vscode/extensions.json
+.idea/

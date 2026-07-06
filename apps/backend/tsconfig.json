@@ -1,0 +1,10 @@
+{
+  "extends": "@app-fitness/config/tsconfig/node.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "noEmit": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src"]
+}

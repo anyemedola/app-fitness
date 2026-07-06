@@ -1,0 +1,140 @@
+// Prisma schema for the challenges/stats/ranking domain.
+// Firebase Auth is the identity provider; `User.id` mirrors the Firebase UID.
+// Firestore separately owns the realtime social feed (posts/reactions/comments) — see
+// packages/firebase — this schema owns challenges, progress, and derived stats/ranking.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChallengeKind {
+  WATER
+  PHOTO
+  COUNT
+  STREAK
+  YESNO
+}
+
+enum ChallengeCadence {
+  DAILY
+  WEEKLY
+  STREAK
+}
+
+model User {
+  id        String   @id // Firebase UID
+  name      String
+  email     String?  @unique
+  photoUrl  String?
+  createdAt DateTime @default(now())
+
+  groupMemberships       GroupMember[]
+  ownedChallenges        Challenge[]            @relation("ChallengeOwner")
+  challengeParticipation ChallengeParticipant[]
+  progressEntries        ProgressEntry[]
+  statsSnapshots         StatsSnapshot[]
+
+  @@map("users")
+}
+
+model Group {
+  id        String   @id @default(cuid())
+  name      String
+  emoji     String   @default("🔥")
+  createdAt DateTime @default(now())
+
+  members    GroupMember[]
+  challenges Challenge[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model Challenge {
+  id           String           @id @default(cuid())
+  groupId      String
+  ownerId      String
+  title        String
+  description  String?
+  kind         ChallengeKind
+  cadence      ChallengeCadence
+  unit         String?
+  target       Float
+  requirePhoto Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+
+  group        Group                  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  owner        User                   @relation("ChallengeOwner", fields: [ownerId], references: [id])
+  participants ChallengeParticipant[]
+  entries      ProgressEntry[]
+
+  @@map("challenges")
+}
+
+model ChallengeParticipant {
+  id          String   @id @default(cuid())
+  challengeId String
+  userId      String
+  joinedAt    DateTime @default(now())
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId])
+  @@map("challenge_participants")
+}
+
+// One row per (challenge, user, period): `periodKey` is a day ("2027-06-10") for
+// daily/streak/yesno challenges, or an ISO week ("2027-W23") for weekly count challenges.
+model ProgressEntry {
+  id          String   @id @default(cuid())
+  challengeId String
+  userId      String
+  periodKey   String
+  value       Float    @default(0)
+  photoUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, userId, periodKey])
+  @@map("progress_entries")
+}
+
+// One row per (user, date): a daily snapshot of overall completion, used to derive the
+// user-level "days in a row" streak shown on the dashboard without recomputing it from
+// scratch across every historical challenge on every request.
+model StatsSnapshot {
+  id                 String   @id @default(cuid())
+  userId             String
+  date               String
+  completedChallenges Int
+  totalChallenges    Int
+  completionPct      Float
+  allCompleted       Boolean
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("stats_snapshots")
+}

@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Desafios Fitness em Grupo",
+    "slug": "app-fitness",
+    "scheme": "app-fitness",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F2E2B"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.appfitness.mobile",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Usamos a câmera para comprovar seus desafios com foto.",
+        "NSPhotoLibraryUsageDescription": "Selecione uma foto da galeria para comprovar seu desafio."
+      }
+    },
+    "android": {
+      "package": "com.appfitness.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F2E2B"
+      },
+      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Usamos a câmera para comprovar seus desafios com foto.",
+          "photosPermission": "Selecione uma foto da galeria para comprovar seu desafio."
+        }
+      ]
+    ],
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      }
+    }
+  }
+}

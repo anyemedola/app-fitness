@@ -23,10 +23,13 @@ module.exports = {
     "import/no-unresolved": "off",
     // These rules statically parse every imported module to verify its exports. React
     // Native/Expo's own sources use Flow syntax that the default (non-Flow) parser can't
-    // read, so they misfire with "Parse errors in imported module" noise. TypeScript
-    // already checks that imported names exist, so we don't lose real coverage here.
+    // read, and packages with conditional/platform-specific "exports" maps (e.g. firebase)
+    // trip up the resolver too, so both misfire with false positives here. TypeScript
+    // (`tsc --noEmit`, run separately) already checks that imported names actually exist,
+    // so we don't lose real coverage by turning these off.
     "import/namespace": "off",
     "import/default": "off",
+    "import/named": "off",
     "import/no-named-as-default": "off",
     "import/no-named-as-default-member": "off",
     "import/order": [

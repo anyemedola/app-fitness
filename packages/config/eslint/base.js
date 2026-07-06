@@ -9,23 +9,26 @@ module.exports = {
     project: false,
   },
   plugins: ["@typescript-eslint", "import"],
-  extends: [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:import/recommended",
-    "plugin:import/typescript",
-    "prettier",
-  ],
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended", "plugin:import/recommended", "prettier"],
   settings: {
     "import/resolver": {
-      typescript: true,
-      node: true,
+      node: { extensions: [".js", ".jsx", ".ts", ".tsx"] },
     },
   },
   rules: {
     "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     "@typescript-eslint/no-explicit-any": "warn",
+    // TS path resolution is left to `tsc --noEmit` (run separately); ESLint here only
+    // checks style/correctness rules, so we don't need eslint-import-resolver-typescript.
     "import/no-unresolved": "off",
+    // These rules statically parse every imported module to verify its exports. React
+    // Native/Expo's own sources use Flow syntax that the default (non-Flow) parser can't
+    // read, so they misfire with "Parse errors in imported module" noise. TypeScript
+    // already checks that imported names exist, so we don't lose real coverage here.
+    "import/namespace": "off",
+    "import/default": "off",
+    "import/no-named-as-default": "off",
+    "import/no-named-as-default-member": "off",
     "import/order": [
       "warn",
       {

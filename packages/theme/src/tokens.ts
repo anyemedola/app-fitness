@@ -24,6 +24,8 @@ export const spacing = {
   xxxl: 40,
 } as const;
 
+export type SpacingToken = keyof typeof spacing;
+
 /** Corner radius scale — `xl` (22) is the hero/card radius from the reference (`--radius`). */
 export const radius = {
   xs: 8,
@@ -33,6 +35,8 @@ export const radius = {
   xl: 22,
   pill: 999,
 } as const;
+
+export type RadiusToken = keyof typeof radius;
 
 export const typography = {
   fontFamily: {

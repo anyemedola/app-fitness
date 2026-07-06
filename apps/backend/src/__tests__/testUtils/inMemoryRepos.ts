@@ -1,5 +1,9 @@
 import type { Challenge, ProgressEntry, StatsSnapshot } from "../../domain/entities";
-import type { ChallengeRepository, ChallengeWithEntry } from "../../domain/repositories/ChallengeRepository";
+import type {
+  ChallengeRepository,
+  ChallengeWithEntry,
+  CreateChallengeInput,
+} from "../../domain/repositories/ChallengeRepository";
 import type { ProgressRepository, UpsertProgressInput } from "../../domain/repositories/ProgressRepository";
 import type { StatsRepository } from "../../domain/repositories/StatsRepository";
 import { periodKeyFor } from "../../domain/period";
@@ -10,6 +14,7 @@ import { periodKeyFor } from "../../domain/period";
 export class InMemoryChallengeRepository implements ChallengeRepository {
   private readonly byId = new Map<string, Challenge>();
   private readonly participants = new Map<string, Set<string>>(); // challengeId -> userIds
+  private seq = 0;
 
   constructor(private readonly progress?: InMemoryProgressRepository) {}
 
@@ -32,6 +37,24 @@ export class InMemoryChallengeRepository implements ChallengeRepository {
       results.push({ challenge, value, periodKey });
     }
     return results;
+  }
+
+  async create(input: CreateChallengeInput): Promise<Challenge> {
+    const challenge: Challenge = {
+      id: `challenge-${(this.seq += 1)}`,
+      groupId: input.groupId,
+      ownerId: input.ownerId,
+      title: input.title,
+      description: input.description ?? null,
+      kind: input.kind,
+      cadence: input.cadence,
+      unit: input.unit ?? null,
+      target: input.target,
+      requirePhoto: input.requirePhoto ?? false,
+      createdAt: new Date(),
+    };
+    this.seed(challenge, [input.ownerId]);
+    return challenge;
   }
 }
 

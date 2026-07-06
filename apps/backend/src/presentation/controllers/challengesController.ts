@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { ChallengeRepository } from "../../domain/repositories/ChallengeRepository";
 import type {
   AutoCheckUseCase,
+  CreateChallengeUseCase,
   IncrementDailyProgressUseCase,
   MarkDailyCheckUseCase,
   RegisterWeeklyRepsUseCase,
@@ -18,11 +19,22 @@ export interface ChallengesControllerDeps {
   uploadPhoto: UploadPhotoUseCase;
   markDailyCheck: MarkDailyCheckUseCase;
   autoCheck: AutoCheckUseCase;
+  createChallenge: CreateChallengeUseCase;
 }
 
 const progressBodySchema = z.object({ delta: z.number() });
 const photoBodySchema = z.object({ photoUrl: z.string().url() });
 const checkBodySchema = z.object({ completedAt: z.string().datetime().optional() });
+const createChallengeBodySchema = z.object({
+  groupId: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+  kind: z.enum(["WATER", "PHOTO", "COUNT", "STREAK", "YESNO"]),
+  cadence: z.enum(["DAILY", "WEEKLY", "STREAK"]),
+  unit: z.string().optional(),
+  target: z.number(),
+  requirePhoto: z.boolean().optional(),
+});
 
 function requireUserId(req: AuthenticatedRequest, res: Response): string | null {
   if (!req.userId) {
@@ -43,6 +55,18 @@ function requireChallengeId(req: AuthenticatedRequest, res: Response): string | 
 }
 
 export function registerChallengesRoutes(router: Router, deps: ChallengesControllerDeps): void {
+  router.post("/challenges", async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const userId = requireUserId(req, res);
+      if (!userId) return;
+      const body = createChallengeBodySchema.parse(req.body);
+      const challenge = await deps.createChallenge.execute({ ...body, ownerId: userId });
+      res.status(201).json({ challenge });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   router.get("/challenges/today", async (req: AuthenticatedRequest, res, next) => {
     try {
       const userId = requireUserId(req, res);

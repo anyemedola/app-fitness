@@ -1,3 +1,4 @@
+export * from "./CreateChallengeUseCase";
 export * from "./IncrementDailyProgressUseCase";
 export * from "./RegisterWeeklyRepsUseCase";
 export * from "./UploadPhotoUseCase";

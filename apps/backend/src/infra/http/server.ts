@@ -6,6 +6,7 @@ import type { ProgressRepository } from "../../domain/repositories/ProgressRepos
 import type { StatsRepository } from "../../domain/repositories/StatsRepository";
 import {
   AutoCheckUseCase,
+  CreateChallengeUseCase,
   GetDailyStatsUseCase,
   IncrementDailyProgressUseCase,
   MarkDailyCheckUseCase,
@@ -42,6 +43,7 @@ export function createServer(deps: ServerDeps): Express {
     uploadPhoto: new UploadPhotoUseCase(deps.challenges, deps.progress),
     markDailyCheck: new MarkDailyCheckUseCase(deps.challenges, deps.progress),
     autoCheck: new AutoCheckUseCase(deps.challenges, deps.progress),
+    createChallenge: new CreateChallengeUseCase(deps.challenges),
   });
 
   registerStatsRoutes(router, {

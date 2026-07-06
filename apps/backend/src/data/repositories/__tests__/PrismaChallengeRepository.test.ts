@@ -21,11 +21,11 @@ function fakePrismaRow(overrides: Partial<Record<string, unknown>> = {}) {
 
 function fakePrisma() {
   return {
-    challenge: { findUnique: jest.fn() },
+    challenge: { findUnique: jest.fn(), create: jest.fn() },
     challengeParticipant: { findMany: jest.fn() },
     progressEntry: { findUnique: jest.fn() },
   } as unknown as PrismaClient & {
-    challenge: { findUnique: jest.Mock };
+    challenge: { findUnique: jest.Mock; create: jest.Mock };
     challengeParticipant: { findMany: jest.Mock };
     progressEntry: { findUnique: jest.Mock };
   };
@@ -86,5 +86,32 @@ describe("PrismaChallengeRepository.findJoinedByUser", () => {
 
     const [result] = await repo.findJoinedByUser("lia");
     expect(result?.value).toBe(0);
+  });
+});
+
+describe("PrismaChallengeRepository.create", () => {
+  it("creates the challenge and enrolls the owner as a participant in the same write", async () => {
+    const prisma = fakePrisma();
+    prisma.challenge.create.mockResolvedValue(fakePrismaRow({ id: "new-1", title: "Sem açúcar 7 dias", kind: "STREAK" }));
+    const repo = new PrismaChallengeRepository(prisma);
+
+    const result = await repo.create({
+      groupId: "suor",
+      ownerId: "lia",
+      title: "Sem açúcar 7 dias",
+      kind: "STREAK",
+      cadence: "STREAK",
+      target: 7,
+    });
+
+    expect(prisma.challenge.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        groupId: "suor",
+        ownerId: "lia",
+        title: "Sem açúcar 7 dias",
+        participants: { create: { userId: "lia" } },
+      }),
+    });
+    expect(result.id).toBe("new-1");
   });
 });

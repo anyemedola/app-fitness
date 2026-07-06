@@ -24,6 +24,31 @@ function buildApp() {
   return { app, challenges, progress };
 }
 
+describe("POST /challenges", () => {
+  it("creates a challenge and enrolls the caller", async () => {
+    const { app } = buildApp();
+    const res = await request(app)
+      .post("/challenges")
+      .set("Authorization", "Bearer valid-token")
+      .send({ groupId: "suor", title: "Sem açúcar 7 dias", kind: "STREAK", cadence: "STREAK", target: 7 });
+
+    expect(res.status).toBe(201);
+    expect(res.body.challenge).toMatchObject({ title: "Sem açúcar 7 dias", kind: "STREAK" });
+
+    const listRes = await request(app).get("/challenges/today").set("Authorization", "Bearer valid-token");
+    expect(listRes.body.challenges).toHaveLength(1);
+  });
+
+  it("400s on an invalid kind", async () => {
+    const { app } = buildApp();
+    const res = await request(app)
+      .post("/challenges")
+      .set("Authorization", "Bearer valid-token")
+      .send({ groupId: "suor", title: "X", kind: "NOT_A_KIND", cadence: "DAILY", target: 1 });
+    expect(res.status).toBe(400);
+  });
+});
+
 describe("GET /challenges/today", () => {
   it("requires authentication", async () => {
     const { app } = buildApp();

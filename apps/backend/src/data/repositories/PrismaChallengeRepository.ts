@@ -1,6 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
 
-import type { ChallengeRepository, ChallengeWithEntry } from "../../domain/repositories/ChallengeRepository";
+import type {
+  ChallengeRepository,
+  ChallengeWithEntry,
+  CreateChallengeInput,
+} from "../../domain/repositories/ChallengeRepository";
 import { periodKeyFor } from "../../domain/period";
 
 import { toChallengeEntity } from "./mappers";
@@ -29,5 +33,23 @@ export class PrismaChallengeRepository implements ChallengeRepository {
         return { challenge, value: entry?.value ?? 0, periodKey };
       }),
     );
+  }
+
+  async create(input: CreateChallengeInput) {
+    const row = await this.prisma.challenge.create({
+      data: {
+        groupId: input.groupId,
+        ownerId: input.ownerId,
+        title: input.title,
+        description: input.description ?? null,
+        kind: input.kind,
+        cadence: input.cadence,
+        unit: input.unit ?? null,
+        target: input.target,
+        requirePhoto: input.requirePhoto ?? false,
+        participants: { create: { userId: input.ownerId } },
+      },
+    });
+    return toChallengeEntity(row);
   }
 }

@@ -1,13 +1,21 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 // `@firebase/auth`'s own package.json *does* declare a "react-native" export condition
 // (unlike the `firebase/auth` wrapper, which has none), and Metro's bundler resolves it
-// correctly at runtime. `tsc`'s plain Node resolution instead always matches the package's
-// top-level "types" entry, whose public .d.ts doesn't declare `getReactNativePersistence` —
-// so we reach it via a namespace import cast locally instead of fighting module resolution
-// settings (which, when overridden project-wide, broke unrelated imports across this package).
+// correctly at runtime on ios/android. `tsc`'s plain Node resolution instead always matches
+// the package's top-level "types" entry, whose public .d.ts doesn't declare
+// `getReactNativePersistence` — so we reach it via a namespace import cast locally instead of
+// fighting module resolution settings (which, when overridden project-wide, broke unrelated
+// imports across this package). On web, Metro resolves the plain browser build instead, which
+// has no such export, so that platform must use the browser persistence APIs below.
 import * as FirebaseAuthReactNative from "@firebase/auth";
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
-import { initializeAuth, type Auth, type Persistence } from "firebase/auth";
+import {
+  indexedDBLocalPersistence,
+  initializeAuth,
+  type Auth,
+  type Persistence,
+} from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
@@ -16,6 +24,12 @@ const getReactNativePersistence = (
     getReactNativePersistence: (storage: typeof AsyncStorage) => Persistence;
   }
 ).getReactNativePersistence;
+
+function getPlatformPersistence(): Persistence {
+  return Platform.OS === "web"
+    ? indexedDBLocalPersistence
+    : getReactNativePersistence(AsyncStorage);
+}
 
 export interface FirebaseEnvConfig {
   apiKey: string;
@@ -43,7 +57,7 @@ let services: FirebaseServices | null = null;
 export function initFirebase(config: FirebaseEnvConfig): FirebaseServices {
   const app = getApps().length ? getApp() : initializeApp(config);
   const auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
+    persistence: getPlatformPersistence(),
   });
   const db = getFirestore(app);
   const storage = getStorage(app);

@@ -6,9 +6,11 @@ import {
   OAuthProvider,
   onAuthStateChanged as firebaseOnAuthStateChanged,
   signInWithCredential,
+  signInWithPopup,
   signOut as firebaseSignOut,
   type User,
 } from "firebase/auth";
+import { Platform } from "react-native";
 
 import { getFirebaseAuth } from "./config";
 import type { AuthUser } from "./types";
@@ -24,11 +26,17 @@ function toAuthUser(user: User | null): AuthUser | null {
 }
 
 /**
- * Signs in with Google via the native account picker, then exchanges the Google ID token
- * for a Firebase credential. Requires `GoogleSignin.configure({ webClientId: ... })` to
- * have been called once at app startup with the OAuth client ID from the Firebase console.
+ * Signs in with Google. On native, uses the native account picker and exchanges the
+ * Google ID token for a Firebase credential; requires `GoogleSignin.configure({ webClientId
+ * })` to have been called once at app startup. On web, `@react-native-google-signin` isn't
+ * implemented, so it goes through Firebase's own popup-based Google provider instead.
  */
 export async function signInWithGoogle(): Promise<AuthUser> {
+  if (Platform.OS === "web") {
+    const result = await signInWithPopup(getFirebaseAuth(), new GoogleAuthProvider());
+    return toAuthUser(result.user) as AuthUser;
+  }
+
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
   const response = await GoogleSignin.signIn();
   const idToken = response.data?.idToken;
@@ -71,7 +79,9 @@ export async function signInWithApple(): Promise<AuthUser> {
 
 export async function signOut(): Promise<void> {
   await firebaseSignOut(getFirebaseAuth());
-  if (GoogleSignin.hasPreviousSignIn()) {
+  // @react-native-google-signin only implements these on native; on web they just log a
+  // "not-implemented, sponsors only" warning, so skip them there (see bootstrap.ts).
+  if (Platform.OS !== "web" && GoogleSignin.hasPreviousSignIn()) {
     await GoogleSignin.signOut();
   }
 }

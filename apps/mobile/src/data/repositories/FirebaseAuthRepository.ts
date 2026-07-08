@@ -13,6 +13,10 @@ export class FirebaseAuthRepository implements AuthRepository {
     return firebase.signInWithApple();
   }
 
+  signInAnonymously(): Promise<AuthUser> {
+    return firebase.signInAnonymously();
+  }
+
   signOut(): Promise<void> {
     return firebase.signOut();
   }

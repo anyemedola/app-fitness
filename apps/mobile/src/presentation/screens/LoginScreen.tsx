@@ -1,11 +1,14 @@
 import { useTheme } from "@app-fitness/theme";
 import { Button, Container, Icon, Spacer } from "@app-fitness/ui";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useSignInWithApple, useSignInWithGoogle } from "../hooks/useAuthSession";
+import { useSignInAnonymously, useSignInWithApple, useSignInWithGoogle } from "../hooks/useAuthSession";
+
+const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 export function LoginScreen() {
   const { theme } = useTheme();
@@ -13,7 +16,8 @@ export function LoginScreen() {
   const styles = useMemo(() => createStyles(theme), [theme]);
   const signInWithGoogle = useSignInWithGoogle();
   const signInWithApple = useSignInWithApple();
-  const [loading, setLoading] = useState<"google" | "apple" | null>(null);
+  const signInAnonymously = useSignInAnonymously();
+  const [loading, setLoading] = useState<"google" | "apple" | "guest" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGoogle = async () => {
@@ -37,6 +41,19 @@ export function LoginScreen() {
       router.replace("/(tabs)");
     } catch {
       setError("Não deu pra entrar com Apple agora. Tenta de novo.");
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleGuest = async () => {
+    setError(null);
+    setLoading("guest");
+    try {
+      await signInAnonymously();
+      router.replace("/(tabs)");
+    } catch {
+      setError("Não deu pra entrar como convidado agora. Tenta de novo.");
     } finally {
       setLoading(null);
     }
@@ -74,6 +91,20 @@ export function LoginScreen() {
             >
               Continuar com Apple
             </Button>
+          )}
+          {isExpoGo && (
+            <>
+              <Spacer size="md" />
+              <Button
+                variant="secondary"
+                icon="user"
+                loading={loading === "guest"}
+                disabled={loading !== null}
+                onPress={handleGuest}
+              >
+                (teste no Expo Go)
+              </Button>
+            </>
           )}
           {error && <Text style={styles.error}>{error}</Text>}
         </View>

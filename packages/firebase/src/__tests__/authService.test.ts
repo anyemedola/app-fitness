@@ -37,6 +37,12 @@ jest.mock("react-native", () => ({
   Platform: { OS: "ios" },
 }));
 
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: { executionEnvironment: "standalone" },
+  ExecutionEnvironment: { Bare: "bare", Standalone: "standalone", StoreClient: "storeClient" },
+}));
+
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import {

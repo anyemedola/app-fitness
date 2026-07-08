@@ -17,4 +17,10 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.unstable_enableSymlinks = true;
 
+// The Firebase JS SDK (used via `firebase/auth`, not `@react-native-firebase`) is
+// incompatible with Metro's package-exports resolution — it throws "Component auth has
+// not been registered yet" at runtime. This is Expo's own documented workaround:
+// https://docs.expo.dev/guides/using-firebase/
+config.resolver.unstable_enablePackageExports = false;
+
 module.exports = config;

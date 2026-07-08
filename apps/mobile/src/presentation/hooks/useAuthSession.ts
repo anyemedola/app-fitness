@@ -30,6 +30,11 @@ export function useSignInWithApple() {
   return async () => setUser(await authRepository.signInWithApple());
 }
 
+export function useSignInAnonymously() {
+  const setUser = useSessionStore((s) => s.setUser);
+  return async () => setUser(await authRepository.signInAnonymously());
+}
+
 export function useSignOut() {
   const setUser = useSessionStore((s) => s.setUser);
   return async () => {

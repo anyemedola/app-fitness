@@ -23,18 +23,36 @@ jest.mock("expo-crypto", () => ({
 }));
 
 jest.mock("firebase/auth", () => ({
-  GoogleAuthProvider: { credential: jest.fn(() => "google-credential") },
+  GoogleAuthProvider: Object.assign(jest.fn(), { credential: jest.fn(() => "google-credential") }),
   OAuthProvider: jest.fn().mockImplementation(() => ({
     credential: jest.fn(() => "apple-credential"),
   })),
   onAuthStateChanged: jest.fn(),
   signInWithCredential: jest.fn(),
+  signInWithPopup: jest.fn(),
   signOut: jest.fn(),
+}));
+
+jest.mock("react-native", () => ({
+  Platform: { OS: "ios" },
+}));
+
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: { executionEnvironment: "standalone" },
+  ExecutionEnvironment: { Bare: "bare", Standalone: "standalone", StoreClient: "storeClient" },
 }));
 
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { onAuthStateChanged, signInWithCredential, signOut as firebaseSignOut } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithCredential,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+} from "firebase/auth";
+import { Platform } from "react-native";
 
 import { getCurrentUser, onAuthStateChanged as onAuthStateChangedService, signInWithApple, signInWithGoogle, signOut } from "../authService";
 import { getFirebaseAuth } from "../config";
@@ -51,6 +69,9 @@ const fakeFirebaseUser = {
 
 describe("signInWithGoogle", () => {
   beforeEach(() => jest.clearAllMocks());
+  afterEach(() => {
+    (Platform as { OS: string }).OS = "ios";
+  });
 
   it("exchanges the Google ID token for a Firebase credential", async () => {
     (GoogleSignin.signIn as jest.Mock).mockResolvedValue({ data: { idToken: "id-token" } });
@@ -66,6 +87,18 @@ describe("signInWithGoogle", () => {
   it("throws when Google does not return an ID token", async () => {
     (GoogleSignin.signIn as jest.Mock).mockResolvedValue({ data: {} });
     await expect(signInWithGoogle()).rejects.toThrow(/did not return an ID token/);
+  });
+
+  it("uses a Firebase popup instead of the native module on web", async () => {
+    (Platform as { OS: string }).OS = "web";
+    (signInWithPopup as jest.Mock).mockResolvedValue({ user: fakeFirebaseUser });
+
+    const user = await signInWithGoogle();
+
+    expect(GoogleSignin.hasPlayServices).not.toHaveBeenCalled();
+    expect(GoogleSignin.signIn).not.toHaveBeenCalled();
+    expect(signInWithPopup).toHaveBeenCalledWith(fakeAuth, expect.any(GoogleAuthProvider));
+    expect(user).toEqual({ uid: "u1", email: "lia@example.com", displayName: "Lia", photoUrl: null });
   });
 });
 
@@ -93,6 +126,9 @@ describe("signInWithApple", () => {
 
 describe("signOut", () => {
   beforeEach(() => jest.clearAllMocks());
+  afterEach(() => {
+    (Platform as { OS: string }).OS = "ios";
+  });
 
   it("signs out of Firebase and Google when a Google session is active", async () => {
     (GoogleSignin.hasPreviousSignIn as jest.Mock).mockReturnValue(true);
@@ -105,6 +141,15 @@ describe("signOut", () => {
     (GoogleSignin.hasPreviousSignIn as jest.Mock).mockReturnValue(false);
     await signOut();
     expect(GoogleSignin.signOut).not.toHaveBeenCalled();
+  });
+
+  it("skips Google entirely on web, even with a previous sign-in", async () => {
+    (Platform as { OS: string }).OS = "web";
+    (GoogleSignin.hasPreviousSignIn as jest.Mock).mockReturnValue(true);
+    await signOut();
+    expect(GoogleSignin.hasPreviousSignIn).not.toHaveBeenCalled();
+    expect(GoogleSignin.signOut).not.toHaveBeenCalled();
+    (Platform as { OS: string }).OS = "ios";
   });
 });
 

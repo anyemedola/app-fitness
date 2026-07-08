@@ -1,5 +1,5 @@
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { initFirebase } from "@app-fitness/firebase";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import { Platform } from "react-native";
 
 let initialized = false;
@@ -19,8 +19,13 @@ export function bootstrapFirebase(): void {
   });
 
   // @react-native-google-signin only implements `configure` on native; on web it just
-  // logs a "not-implemented, sponsors only" warning, so skip it there.
-  if (Platform.OS !== "web") {
+  // logs a "not-implemented, sponsors only" warning, so skip it there. Its native module
+  // also isn't present in Expo Go (only in a custom dev client / standalone build), so
+  // skip there too — otherwise it crashes the whole app at startup.
+  const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  if (Platform.OS !== "web" && !isExpoGo) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require, see comment above
+    const { GoogleSignin } = require("@react-native-google-signin/google-signin");
     GoogleSignin.configure({
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? "",
     });
